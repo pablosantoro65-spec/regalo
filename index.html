@@ -715,7 +715,7 @@
         created_at: new Date().toISOString()
     };
 
-    // CORRECCIÓN CLAVE: Guardar en el mismo array que lee tu inicio
+    
     let currentItems = JSON.parse(localStorage.getItem('regalo_items')) || [];
     currentItems.unshift(newPost);
     localStorage.setItem('regalo_items', JSON.stringify(currentItems));
