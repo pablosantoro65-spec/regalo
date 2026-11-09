@@ -7,115 +7,223 @@
     <script src="https://jsdelivr.net"></script>
     <link rel="stylesheet" href="https://cloudflare.com">
     <style>
-        .active-tab { color: #2563eb; border-top: 2px solid #2563eb; }
+        .active-tab { color: #4f46e5; border-top: 3px solid #4f46e5; background-color: #f3f4f6; }
         .hidden { display: none; }
+        .zone-badge { background-color: #e0e7ff; color: #4338ca; }
+        .cat-badge { background-color: #f3e8ff; color: #6b21a8; }
     </style>
 </head>
-<body class="bg-gray-100 pb-20 font-sans text-gray-800">
+<body class="bg-slate-50 pb-24 font-sans text-slate-800 antialiased">
 
-    <!-- Encabezado -->
-    <header class="sticky top-0 z-50 flex items-center justify-between bg-blue-600 p-4 text-white shadow-md">
-        <h1 class="text-xl font-bold"><i class="fa-solid fa-gift mr-2"></i>Regalo</h1>
-        <button onclick="showSection('pro')" class="rounded-full bg-yellow-400 px-3 py-1 text-xs font-bold text-blue-900 animate-pulse">Ingresar PRO</button>
+    <!-- Encabezado Principal -->
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-sm flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md shadow-indigo-200">
+                <i class="fa-solid fa-hand-holding-heart text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black tracking-tight text-slate-900">Regalo</h1>
+                <p class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Donaciones por Zona</p>
+            </div>
+        </div>
+        <button onclick="showSection('pro')" class="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-1.5 text-xs font-bold text-amber-950 shadow-sm transition-transform active:scale-95">
+            <i class="fa-solid fa-crown text-amber-900"></i> Ser PRO
+        </button>
     </header>
 
+    <!-- Banner Informativo -->
+    <div id="welcome-banner" class="m-4 p-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
+        <div class="relative z-10">
+            <h3 class="font-bold text-base">¡Regalá lo que ya no usás!</h3>
+            <p class="text-xs text-indigo-100 mt-1 max-w-[85%]">Ayudá a tus vecinos y dale una segunda vida a tus cosas de forma 100% gratuita.</p>
+        </div>
+        <i class="fa-solid fa-gift text-7xl text-white/10 absolute -right-2 -bottom-2 transform rotate-12"></i>
+    </div>
+
     <!-- Sección Explorar -->
-    <section id="explore-section" class="p-4">
-        <!-- Filtros -->
-        <div class="mb-4 rounded-xl bg-white p-4 shadow-sm">
-            <label class="block text-sm font-semibold text-gray-600 mb-2"><i class="fa-solid fa-location-dot mr-1"></i> Filtrar por Zona</label>
-            <select id="zone-filter" onchange="renderItems()" class="w-full rounded-lg border p-2 bg-gray-50">
-                <option value="Todas">Todas las zonas</option>
-                <option value="Zona Norte">Zona Norte</option>
-                <option value="Zona Sur">Zona Sur</option>
-                <option value="Zona Oeste">Zona Oeste</option>
-                <option value="Centro / CABA">Centro / CABA</option>
-            </select>
+    <section id="explore-section" class="px-4 space-y-4">
+        <!-- Barra de Filtros Estilizada -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5"><i class="fa-solid fa-location-dot mr-1 text-indigo-500"></i> ¿De dónde sos?</label>
+                <select id="zone-filter" onchange="renderItems()" class="w-full rounded-xl border border-slate-200 p-2.5 bg-slate-50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                    <option value="Todas">Todas las zonas (Ver todo)</option>
+                    <option value="Zona Norte">Zona Norte</option>
+                    <option value="Zona Sur">Zona Sur</option>
+                    <option value="Zona Oeste">Zona Oeste</option>
+                    <option value="Centro / CABA">Centro / CABA</option>
+                    <option value="Córdoba Centro">Córdoba Centro</option>
+                    <option value="Rosario Centro">Rosario Centro</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5"><i class="fa-solid fa-tags mr-1 text-purple-500"></i> Categoría</label>
+                <select id="cat-filter" onchange="renderItems()" class="w-full rounded-xl border border-slate-200 p-2.5 bg-slate-50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                    <option value="Todas">Todas las categorías</option>
+                    <option value="Muebles & Hogar">Muebles & Hogar</option>
+                    <option value="Ropa & Calzado">Ropa & Calzado</option>
+                    <option value="Electrónica">Electrónica</option>
+                    <option value="Libros">Libros</option>
+                    <option value="Niños & Juguetes">Niños & Juguetes</option>
+                    <option value="Otros">Otros</option>
+                </select>
+            </div>
         </div>
 
-        <h2 class="text-lg font-bold mb-3">Objetos disponibles</h2>
+        <!-- Título de sección -->
+        <div class="flex items-center justify-between pt-2">
+            <h2 class="text-base font-extrabold text-slate-900 tracking-tight">Objetos disponibles en tu comunidad</h2>
+            <span id="items-count" class="text-xs bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full font-bold">0</span>
+        </div>
+        
+        <!-- Contenedor de Tarjetas Modernas -->
         <div id="items-container" class="grid grid-cols-1 gap-4 sm:grid-cols-2"></div>
     </section>
 
     <!-- Sección Publicar -->
-    <section id="publish-section" class="hidden p-4">
-        <div class="rounded-xl bg-white p-4 shadow-sm">
-            <h2 class="text-lg font-bold mb-4"><i class="fa-solid fa-plus-circle mr-2 text-blue-600"></i>Publicar un regalo</h2>
+    <section id="publish-section" class="hidden px-4">
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 max-w-xl mx-auto">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="bg-indigo-50 text-indigo-600 p-2 rounded-xl"><i class="fa-solid fa-circle-plus text-lg"></i></div>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Publicar un regalo</h2>
+                    <p class="text-xs text-slate-500">Subí lo que ya no usás para que alguien lo retire.</p>
+                </div>
+            </div>
+            
             <form id="publish-form" onsubmit="handlePublish(event)" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1">Título del Objeto *</label>
-                    <input type="text" id="item-title" required class="w-full rounded-lg border p-2">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Título del objeto *</label>
+                    <input type="text" id="item-title" required placeholder="Ej: Mesa de luz de madera, Zapatillas talle 38..." class="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Categoría *</label>
+                        <select id="item-cat" required class="w-full rounded-xl border border-slate-200 p-2.5 text-sm bg-white outline-none">
+                            <option value="Muebles & Hogar">Muebles & Hogar</option>
+                            <option value="Ropa & Calzado">Ropa & Calzado</option>
+                            <option value="Electrónica">Electrónica</option>
+                            <option value="Libros">Libros</option>
+                            <option value="Niños & Juguetes">Niños & Juguetes</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Tu Zona *</label>
+                        <select id="item-zone" required class="w-full rounded-xl border border-slate-200 p-2.5 text-sm bg-white outline-none">
+                            <option value="Zona Norte">Zona Norte</option>
+                            <option value="Zona Sur">Zona Sur</option>
+                            <option value="Zona Oeste">Zona Oeste</option>
+                            <option value="Centro / CABA">Centro / CABA</option>
+                            <option value="Córdoba Centro">Córdoba Centro</option>
+                            <option value="Rosario Centro">Rosario Centro</option>
+                        </select>
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1">Zona *</label>
-                    <select id="item-zone" required class="w-full rounded-lg border p-2">
-                        <option value="Zona Norte">Zona Norte</option>
-                        <option value="Zona Sur">Zona Sur</option>
-                        <option value="Zona Oeste">Zona Oeste</option>
-                        <option value="Centro / CABA">Centro / CABA</option>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Estado actual del producto</label>
+                    <select id="item-status" class="w-full rounded-xl border border-slate-200 p-2.5 text-sm bg-white outline-none">
+                        <option value="Como nuevo">Como nuevo</option>
+                        <option value="Buen estado">Buen estado</option>
+                        <option value="Usado con detalles">Usado con detalles</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1">Descripción y detalles de retiro *</label>
-                    <textarea id="item-desc" required class="w-full rounded-lg border p-2" rows="3"></textarea>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Descripción y detalles de retiro *</label>
+                    <textarea id="item-desc" required placeholder="Indicá horarios de retiro aproximados o si tiene algún detalle el objeto..." class="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" rows="3"></textarea>
                 </div>
-                <button type="submit" class="w-full rounded-lg bg-blue-600 p-2 font-bold text-white shadow hover:bg-blue-700">Publicar Regalando</button>
+                <button type="submit" class="w-full rounded-xl bg-indigo-600 p-3 font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 transition-colors cursor-pointer text-sm">
+                    <i class="fa-solid fa-share-from-square mr-1"></i> Publicar Gratis Ahora
+                </button>
             </form>
         </div>
     </section>
-        <!-- Sección Mensajes -->
-    <section id="messages-section" class="hidden p-4">
-        <div class="rounded-xl bg-white p-4 shadow-sm">
-            <h2 class="text-lg font-bold mb-4"><i class="fa-solid fa-comments mr-2 text-blue-600"></i>Mensajes y Coordinación</h2>
-            <div id="chat-box" class="h-48 overflow-y-auto border rounded p-2 mb-2 bg-gray-50 text-sm space-y-2"></div>
-            <div class="flex gap-2">
-                <input type="text" id="chat-input" placeholder="Escribe un mensaje..." class="flex-1 rounded-lg border p-2">
-                <button onclick="sendMessage()" class="rounded-lg bg-blue-600 px-4 text-white font-bold"><i class="fa-solid fa-paper-plane"></i></button>
+    <!-- Sección Mensajes -->
+    <section id="messages-section" class="hidden px-4">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 max-w-xl mx-auto flex flex-col h-[65vh]">
+            <div class="flex items-center gap-2 border-b border-slate-100 pb-3 mb-3">
+                <div class="bg-emerald-50 text-emerald-600 p-2 rounded-xl"><i class="fa-solid fa-comments text-lg"></i></div>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900" id="chat-title">Bandeja de Mensajes</h2>
+                    <p class="text-xs text-slate-500">Coordiná las entregas de forma segura.</p>
+                </div>
+            </div>
+            
+            <div id="chat-box" class="flex-1 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-150 text-sm space-y-2.5 min-h-[250px]">
+                <div class="text-center text-slate-400 text-xs py-12">No tenés conversaciones activas de coordinación. ¡Hacé clic en "Pedir objeto" en el inicio para conversar!</div>
+            </div>
+            
+            <div class="flex gap-2 mt-3">
+                <input type="text" id="chat-input" placeholder="Escribí un mensaje con tu consulta..." class="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
+                <button onclick="sendMessage()" class="rounded-xl bg-indigo-600 px-4 text-white font-bold hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </div>
     </section>
 
-    <!-- Sección Perfil (Modificada sin Teléfono ni Dirección) -->
-    <section id="profile-section" class="hidden p-4">
-        <div class="rounded-xl bg-white p-4 shadow-sm">
-            <h2 class="text-lg font-bold mb-2"><i class="fa-solid fa-user-circle mr-2 text-blue-600"></i>Perfil de Usuario</h2>
-            <p class="text-xs text-gray-500 mb-4">Completa tus datos básicos para poder interactuar en la plataforma.</p>
+    <!-- Sección Perfil (Corregida: Solo Nombre y Email Obligatorios) -->
+    <section id="profile-section" class="hidden px-4">
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 max-w-xl mx-auto">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="bg-violet-50 text-violet-600 p-2 rounded-xl"><i class="fa-solid fa-user text-lg"></i></div>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Mis Datos Básicos</h2>
+                    <p class="text-xs text-slate-500">Es rápido: No te pedimos domicilio ni teléfono privado.</p>
+                </div>
+            </div>
+            
             <form id="profile-form" onsubmit="handleSaveProfile(event)" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1">Nombre Completo *</label>
-                    <input type="text" id="user-name" required class="w-full rounded-lg border p-2">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nombre y Apellido completo *</label>
+                    <input type="text" id="user-name" required placeholder="Ej: Juan Pérez" class="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1">Correo Electrónico *</label>
-                    <input type="email" id="user-email" required class="w-full rounded-lg border p-2">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Correo Electrónico de contacto *</label>
+                    <input type="email" id="user-email" required placeholder="ejemplo@correo.com" class="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
                 </div>
-                <button type="submit" class="w-full rounded-lg bg-green-600 p-2 font-bold text-white shadow hover:bg-green-700">Guardar Datos del Perfil</button>
+                <button type="submit" class="w-full rounded-xl bg-emerald-600 p-3 font-bold text-white shadow-md shadow-emerald-100 hover:bg-emerald-700 transition-colors cursor-pointer text-sm">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar y Activar Cuenta
+                </button>
             </form>
         </div>
     </section>
 
-    <!-- Sección PRO -->
-    <section id="pro-section" class="hidden p-4 text-center">
-        <div class="rounded-xl bg-white p-6 shadow-sm space-y-4">
-            <i class="fa-solid fa-crown text-4xl text-yellow-400"></i>
-            <h2 class="text-xl font-bold">Regalo PRO</h2>
-            <p class="text-sm text-gray-600">Navega sin ningún tipo de anuncios y destaca tus publicaciones.</p>
-            <p class="text-xl font-bold text-blue-600">$2.99 USD /mes</p>
-            <button onclick="alert('¡Gracias por apoyar el proyecto!')" class="w-full rounded-lg bg-yellow-400 py-2 font-bold text-blue-900 shadow">Suscribirme</button>
+    <!-- Sección PRO (Estética Premium) -->
+    <section id="pro-section" class="hidden px-4 text-center max-w-md mx-auto">
+        <div class="bg-white rounded-3xl p-6 border border-amber-200 shadow-xl shadow-amber-50 space-y-4 relative overflow-hidden">
+            <div class="absolute top-0 right-0 bg-amber-400 text-amber-950 font-black text-[9px] uppercase px-4 py-1 rounded-bl-xl tracking-widest">Premium</div>
+            <div class="mx-auto w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 text-3xl shadow-inner"><i class="fa-solid fa-crown"></i></div>
+            <h2 class="text-xl font-black text-slate-900">Pasate a Regalo PRO</h2>
+            <p class="text-xs text-slate-500 leading-relaxed">Navegá sin anuncios, destacá tus objetos publicados arriba de todo y ayudá a sostener el servidor de la comunidad.</p>
+            <div class="bg-slate-50 rounded-xl p-3 inline-block border border-slate-100">
+                <span class="text-2xl font-black text-indigo-600">$2.99 USD</span><span class="text-xs text-slate-400 font-medium"> /mes</span>
+            </div>
+            <button onclick="alert('¡Muchas gracias por simular apoyar el proyecto!')" class="w-full rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 py-3 font-black text-amber-950 shadow-md shadow-amber-200 transition-all active:scale-98 cursor-pointer text-sm">Suscribirme con Tarjeta</button>
         </div>
     </section>
 
-    <!-- Barra de Navegación Inferior -->
-    <nav class="fixed bottom-0 left-0 right-0 flex border-t bg-white shadow-lg text-gray-500">
-        <button onclick="showSection('explore')" id="nav-explore" class="flex flex-1 flex-col items-center py-2 active-tab"><i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-xs">Inicio</span></button>
-        <button onclick="showSection('publish')" id="nav-publish" class="flex flex-1 flex-col items-center py-2"><i class="fa-solid fa-plus-circle text-lg"></i><span class="text-xs">Publicar</span></button>
-        <button onclick="showSection('messages')" id="nav-messages" class="flex flex-1 flex-col items-center py-2"><i class="fa-solid fa-envelope text-lg"></i><span class="text-xs">Mensajes</span></button>
-        <button onclick="showSection('profile')" id="nav-profile" class="flex flex-1 flex-col items-center py-2"><i class="fa-solid fa-user text-lg"></i><span class="text-xs">Perfil</span></button>
+    <!-- Barra de Navegación Inferior Estilo App -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around shadow-xl text-slate-400 z-50">
+        <button onclick="showSection('explore')" id="nav-explore" class="flex flex-1 flex-col items-center gap-0.5 py-3 transition-colors active-tab"><i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-[10px] font-bold">Inicio</span></button>
+        <button onclick="showSection('publish')" id="nav-publish" class="flex flex-1 flex-col items-center gap-0.5 py-3 transition-colors"><i class="fa-solid fa-circle-plus text-lg"></i><span class="text-[10px] font-bold">Publicar</span></button>
+        <button onclick="showSection('messages')" id="nav-messages" class="flex flex-1 flex-col items-center gap-0.5 py-3 transition-colors"><i class="fa-solid fa-envelope text-lg"></i><span class="text-[10px] font-bold">Mensajes</span></button>
+        <button onclick="showSection('profile')" id="nav-profile" class="flex flex-1 flex-col items-center gap-0.5 py-3 transition-colors"><i class="fa-solid fa-user-gear text-lg"></i><span class="text-[10px] font-bold">Mi Perfil</span></button>
     </nav>
 
-    <!-- Lógica de Funcionamiento -->
+    <!-- Lógica JavaScript Dinámica Integrada -->
     <script>
-        let items = JSON.parse(localStorage.getItem('regalo_items')) || [];
+        // Datos de ejemplo iniciales para que la web no se vea vacía al entrar
+        const initialMockData = [
+            { id: 1, title: "Sillón individual de pana", zone: "Zona Norte", cat: "Muebles & Hogar", status: "Buen estado", desc: "Se retira por Olivos los fines de semana. Tiene un detalle de desgaste menor en un apoyabrazos.", user: "Carlos G." },
+            { id: 2, title: "Campera de abrigo infantil", zone: "Zona Sur", cat: "Ropa & Calzado", status: "Como nuevo", desc: "Talle 6, abrigo impermeable térmico impecable. Se retira por Lanús Oeste.", user: "María L." },
+            { id: 3, title: "Monitor de PC 19 pulgadas", zone: "Centro / CABA", cat: "Electrónica", status: "Usado con detalles", desc: "Funciona perfecto, incluye cable VGA y de alimentación. Estoy a cuadras de Plaza de Mayo.", user: "Andrés M." }
+        ];
+
+        let items = JSON.parse(localStorage.getItem('regalo_items'));
+        if (!items || items.length === 0) {
+            items = initialMockData;
+            localStorage.setItem('regalo_items', JSON.stringify(items));
+        }
+
         let profile = JSON.parse(localStorage.getItem('regalo_profile')) || null;
 
         function showSection(section) {
@@ -127,6 +235,13 @@
             document.getElementById(`${section}-section`).classList.remove('hidden');
             const activeNav = document.getElementById(`nav-${section}`);
             if(activeNav) activeNav.classList.add('active-tab');
+            
+            // Ocultar banner si no está en explorar
+            if(section === 'explore') {
+                document.getElementById('welcome-banner').classList.remove('hidden');
+            } else {
+                document.getElementById('welcome-banner').classList.add('hidden');
+            }
         }
 
         function handleSaveProfile(e) {
@@ -136,14 +251,14 @@
                 email: document.getElementById('user-email').value
             };
             localStorage.setItem('regalo_profile', JSON.stringify(profile));
-            alert('¡Perfil guardado correctamente!');
+            alert('¡Tus datos se guardaron con éxito! Ya podés interactuar.');
             showSection('explore');
         }
 
         function handlePublish(e) {
             e.preventDefault();
             if(!profile) {
-                alert('Primero debes completar al menos tu Nombre y Email en la sección Perfil para publicar.');
+                alert('Por favor, ingresá tu Nombre y Email en la sección "Mi Perfil" antes de publicar para que sepan quién lo regala.');
                 showSection('profile');
                 return;
             }
@@ -151,66 +266,55 @@
                 id: Date.now(),
                 title: document.getElementById('item-title').value,
                 zone: document.getElementById('item-zone').value,
+                cat: document.getElementById('item-cat').value,
+                status: document.getElementById('item-status').value,
                 desc: document.getElementById('item-desc').value,
                 user: profile.name
             };
-            items.push(newItem);
+            items.unshift(newItem); // Agrega al principio
             localStorage.setItem('regalo_items', JSON.stringify(items));
             document.getElementById('publish-form').reset();
-            alert('¡Objeto publicado con éxito!');
+            alert('¡Excelente! Tu objeto fue publicado en la cartelera comunitaria.');
             renderItems();
             showSection('explore');
         }
 
         function renderItems() {
-            const container = document.getElementById('items-container');
-            const filter = document.getElementById('zone-filter').value;
-            container.innerHTML = '';
-            
-            const filtered = filter === 'Todas' ? items : items.filter(i => i.zone === filter);
-            
-            if(filtered.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-sm col-span-2 text-center py-8">No hay objetos publicados en esta zona todavía.</p>';
-                return;
-            }
-
-            filtered.forEach(item => {
-                container.innerHTML += `
-                    <div class="rounded-xl bg-white p-4 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-semibold mb-2">${item.zone}</span>
-                            <h3 class="font-bold text-gray-900 text-base">${item.title}</h3>
-                            <p class="text-gray-600 text-xs mt-1">${item.desc}</p>
-                        </div>
-                        <div class="mt-4 pt-2 border-t flex items-center justify-between text-xs text-gray-500">
-                            <span>Por: ${item.user}</span>
-                            <button onclick="startChat('${item.title}')" class="bg-blue-600 text-white font-bold px-3 py-1 rounded-lg">Pedir</button>
-                        </div>
-                    </div>`;
-            });
-        }
-
-        function startChat(title) {
-            document.getElementById('chat-box').innerHTML = `<div class="bg-blue-100 text-blue-800 p-2 rounded-lg text-xs">Iniciaste una consulta por: <strong>${title}</strong>. Coordina el retiro aquí debajo.</div>`;
-            showSection('messages');
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('chat-input');
-            if(!input.value.trim()) return;
-            const chatBox = document.getElementById('chat-box');
-            chatBox.innerHTML += `<div class="text-right"><span class="inline-block bg-blue-600 text-white p-2 rounded-lg text-xs">${input.value}</span></div>`;
-            input.value = '';
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        // Carga inicial
-        if(profile) {
-            document.getElementById('user-name').value = profile.name;
-            document.getElementById('user-email').value = profile.email;
-        }
-        renderItems();
-    </script>
-</body>
-</html>
+const container = document.getElementById('items-container');
+const zoneFilter = document.getElementById('zone-filter').value;
+const catFilter = document.getElementById('cat-filter').value;
+container.innerHTML = '';
+let filtered = items;
+if (zoneFilter !== 'Todas') filtered = filtered.filter(i => i.zone === zoneFilter);
+if (catFilter !== 'Todas') filtered = filtered.filter(i => i.cat === catFilter);
+document.getElementById('items-count').innerText = filtered.length;
+if(filtered.length === 0) {
+container.innerHTML =  <div class="col-span-1 sm:col-span-2 text-center py-12 bg-white rounded-2xl border border-slate-100 p-6"> <i class="fa-solid fa-boxes-padded text-4xl text-slate-300 mb-2"></i> <p class="text-slate-500 font-medium text-sm">No encontramos objetos publicados con estos filtros.</p> <p class="text-slate-400 text-xs mt-1">Probá cambiando la zona o la categoría seleccionada.</p> </div>;
+return;
+}
+filtered.forEach(item => {
+container.innerHTML +=  <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-md transition-all"> <div> <div class="flex items-center gap-1.5 flex-wrap mb-2"> <span class="zone-badge text-[10px] font-bold px-2 py-0.5 rounded-md"><i class="fa-solid fa-location-dot text-[9px] mr-0.5"></i>${item.zone}</span> <span class="cat-badge text-[10px] font-bold px-2 py-0.5 rounded-md">${item.cat}</span> <span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-md font-medium">${item.status}</span> </div> <h3 class="font-extrabold text-slate-900 text-base leading-tight tracking-tight">${item.title}</h3> <p class="text-slate-600 text-xs mt-1.5 line-clamp-3 bg-slate-50 p-2 rounded-lg border border-slate-100">${item.desc}</p> </div> <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs"> <div class="flex items-center gap-1 text-slate-500 font-medium"> <div class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-[9px] font-black flex items-center justify-center uppercase">${item.user.charAt(0)}</div> <span class="truncate max-w-[100px]">${item.user}</span> </div> <button onclick="startChat('${item.title}', '${item.user}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-1.5 rounded-xl shadow-sm transition-all cursor-pointer active:scale-95"> <i class="fa-solid fa-paper-plane text-[9px] mr-1"></i> Pedir </button> </div> </div>;
+});
+}
+function startChat(title, user) {
+document.getElementById('chat-title').innerText = Coordinando con ${user};
+document.getElementById('chat-box').innerHTML =  <div class="bg-indigo-50 text-indigo-900 p-3 rounded-2xl border border-indigo-100 text-xs space-y-1"> <p class="font-bold"><i class="fa-solid fa-circle-info mr-1"></i> Interés enviado por: "${title}"</p> <p class="text-indigo-700">Acordá un día, horario y punto de encuentro público para retirar el regalo de forma segura.</p> </div> <div class="text-left"><span class="inline-block bg-white border p-2.5 rounded-2xl text-xs text-slate-700 shadow-sm font-medium">Hola! Estoy interesado en el regalo "${title}" que publicaste. ¿Sigue disponible para retirar? 😊</span></div>;
+showSection('messages');
+}
+function sendMessage() {
+const input = document.getElementById('chat-input');
+if(!input.value.trim()) return;
+const chatBox = document.getElementById('chat-box');
+// Eliminar texto de bandeja vacía si existe
+if(chatBox.innerText.includes("No tenés conversaciones activas")) chatBox.innerHTML = '';
+chatBox.innerHTML +=  <div class="text-right"> <span class="inline-block bg-indigo-600 text-white p-2.5 rounded-2xl text-xs font-medium shadow-sm max-w-[85%] text-left">${input.value}</span> </div>;
+input.value = '';
+chatBox.scrollTop = chatBox.scrollHeight;
+}
+// Configuración inicial en memoria
+if(profile) {
+document.getElementById('user-name').value = profile.name;
+document.getElementById('user-email').value = profile.email;
+}
+renderItems();
 
