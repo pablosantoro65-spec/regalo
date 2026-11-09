@@ -4,10 +4,213 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Regalo - Donaciones por Zona</title>
-    <!-- El código HTML, estilos CSS y lógica en JavaScript se han adaptado para eliminar los campos obligatorios de teléfono y dirección del perfil de usuario. Puedes consultar o copiar la estructura completa optimizada directamente desde los archivos del proyecto o el repositorio asociado. -->
+    <script src="https://jsdelivr.net"></script>
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <style>
+        .active-tab { color: #2563eb; border-top: 2px solid #2563eb; }
+        .hidden { display: none; }
+    </style>
 </head>
-<body>
-    <!-- Estructura simplificada sin bloqueos de teléfono/dirección -->
+<body class="bg-gray-100 pb-20 font-sans text-gray-800">
+
+    <!-- Encabezado -->
+    <header class="sticky top-0 z-50 flex items-center justify-between bg-blue-600 p-4 text-white shadow-md">
+        <h1 class="text-xl font-bold"><i class="fa-solid fa-gift mr-2"></i>Regalo</h1>
+        <button onclick="showSection('pro')" class="rounded-full bg-yellow-400 px-3 py-1 text-xs font-bold text-blue-900 animate-pulse">Ingresar PRO</button>
+    </header>
+
+    <!-- Sección Explorar -->
+    <section id="explore-section" class="p-4">
+        <!-- Filtros -->
+        <div class="mb-4 rounded-xl bg-white p-4 shadow-sm">
+            <label class="block text-sm font-semibold text-gray-600 mb-2"><i class="fa-solid fa-location-dot mr-1"></i> Filtrar por Zona</label>
+            <select id="zone-filter" onchange="renderItems()" class="w-full rounded-lg border p-2 bg-gray-50">
+                <option value="Todas">Todas las zonas</option>
+                <option value="Zona Norte">Zona Norte</option>
+                <option value="Zona Sur">Zona Sur</option>
+                <option value="Zona Oeste">Zona Oeste</option>
+                <option value="Centro / CABA">Centro / CABA</option>
+            </select>
+        </div>
+
+        <h2 class="text-lg font-bold mb-3">Objetos disponibles</h2>
+        <div id="items-container" class="grid grid-cols-1 gap-4 sm:grid-cols-2"></div>
+    </section>
+
+    <!-- Sección Publicar -->
+    <section id="publish-section" class="hidden p-4">
+        <div class="rounded-xl bg-white p-4 shadow-sm">
+            <h2 class="text-lg font-bold mb-4"><i class="fa-solid fa-plus-circle mr-2 text-blue-600"></i>Publicar un regalo</h2>
+            <form id="publish-form" onsubmit="handlePublish(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Título del Objeto *</label>
+                    <input type="text" id="item-title" required class="w-full rounded-lg border p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Zona *</label>
+                    <select id="item-zone" required class="w-full rounded-lg border p-2">
+                        <option value="Zona Norte">Zona Norte</option>
+                        <option value="Zona Sur">Zona Sur</option>
+                        <option value="Zona Oeste">Zona Oeste</option>
+                        <option value="Centro / CABA">Centro / CABA</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Descripción y detalles de retiro *</label>
+                    <textarea id="item-desc" required class="w-full rounded-lg border p-2" rows="3"></textarea>
+                </div>
+                <button type="submit" class="w-full rounded-lg bg-blue-600 p-2 font-bold text-white shadow hover:bg-blue-700">Publicar Regalando</button>
+            </form>
+        </div>
+    </section>
+        <!-- Sección Mensajes -->
+    <section id="messages-section" class="hidden p-4">
+        <div class="rounded-xl bg-white p-4 shadow-sm">
+            <h2 class="text-lg font-bold mb-4"><i class="fa-solid fa-comments mr-2 text-blue-600"></i>Mensajes y Coordinación</h2>
+            <div id="chat-box" class="h-48 overflow-y-auto border rounded p-2 mb-2 bg-gray-50 text-sm space-y-2"></div>
+            <div class="flex gap-2">
+                <input type="text" id="chat-input" placeholder="Escribe un mensaje..." class="flex-1 rounded-lg border p-2">
+                <button onclick="sendMessage()" class="rounded-lg bg-blue-600 px-4 text-white font-bold"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Perfil (Modificada sin Teléfono ni Dirección) -->
+    <section id="profile-section" class="hidden p-4">
+        <div class="rounded-xl bg-white p-4 shadow-sm">
+            <h2 class="text-lg font-bold mb-2"><i class="fa-solid fa-user-circle mr-2 text-blue-600"></i>Perfil de Usuario</h2>
+            <p class="text-xs text-gray-500 mb-4">Completa tus datos básicos para poder interactuar en la plataforma.</p>
+            <form id="profile-form" onsubmit="handleSaveProfile(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Nombre Completo *</label>
+                    <input type="text" id="user-name" required class="w-full rounded-lg border p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Correo Electrónico *</label>
+                    <input type="email" id="user-email" required class="w-full rounded-lg border p-2">
+                </div>
+                <button type="submit" class="w-full rounded-lg bg-green-600 p-2 font-bold text-white shadow hover:bg-green-700">Guardar Datos del Perfil</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Sección PRO -->
+    <section id="pro-section" class="hidden p-4 text-center">
+        <div class="rounded-xl bg-white p-6 shadow-sm space-y-4">
+            <i class="fa-solid fa-crown text-4xl text-yellow-400"></i>
+            <h2 class="text-xl font-bold">Regalo PRO</h2>
+            <p class="text-sm text-gray-600">Navega sin ningún tipo de anuncios y destaca tus publicaciones.</p>
+            <p class="text-xl font-bold text-blue-600">$2.99 USD /mes</p>
+            <button onclick="alert('¡Gracias por apoyar el proyecto!')" class="w-full rounded-lg bg-yellow-400 py-2 font-bold text-blue-900 shadow">Suscribirme</button>
+        </div>
+    </section>
+
+    <!-- Barra de Navegación Inferior -->
+    <nav class="fixed bottom-0 left-0 right-0 flex border-t bg-white shadow-lg text-gray-500">
+        <button onclick="showSection('explore')" id="nav-explore" class="flex flex-1 flex-col items-center py-2 active-tab"><i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-xs">Inicio</span></button>
+        <button onclick="showSection('publish')" id="nav-publish" class="flex flex-1 flex-col items-center py-2"><i class="fa-solid fa-plus-circle text-lg"></i><span class="text-xs">Publicar</span></button>
+        <button onclick="showSection('messages')" id="nav-messages" class="flex flex-1 flex-col items-center py-2"><i class="fa-solid fa-envelope text-lg"></i><span class="text-xs">Mensajes</span></button>
+        <button onclick="showSection('profile')" id="nav-profile" class="flex flex-1 flex-col items-center py-2"><i class="fa-solid fa-user text-lg"></i><span class="text-xs">Perfil</span></button>
+    </nav>
+
+    <!-- Lógica de Funcionamiento -->
+    <script>
+        let items = JSON.parse(localStorage.getItem('regalo_items')) || [];
+        let profile = JSON.parse(localStorage.getItem('regalo_profile')) || null;
+
+        function showSection(section) {
+            ['explore', 'publish', 'messages', 'profile', 'pro'].forEach(s => {
+                document.getElementById(`${s}-section`).classList.add('hidden');
+                const navBtn = document.getElementById(`nav-${s}`);
+                if(navBtn) navBtn.classList.remove('active-tab');
+            });
+            document.getElementById(`${section}-section`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${section}`);
+            if(activeNav) activeNav.classList.add('active-tab');
+        }
+
+        function handleSaveProfile(e) {
+            e.preventDefault();
+            profile = {
+                name: document.getElementById('user-name').value,
+                email: document.getElementById('user-email').value
+            };
+            localStorage.setItem('regalo_profile', JSON.stringify(profile));
+            alert('¡Perfil guardado correctamente!');
+            showSection('explore');
+        }
+
+        function handlePublish(e) {
+            e.preventDefault();
+            if(!profile) {
+                alert('Primero debes completar al menos tu Nombre y Email en la sección Perfil para publicar.');
+                showSection('profile');
+                return;
+            }
+            const newItem = {
+                id: Date.now(),
+                title: document.getElementById('item-title').value,
+                zone: document.getElementById('item-zone').value,
+                desc: document.getElementById('item-desc').value,
+                user: profile.name
+            };
+            items.push(newItem);
+            localStorage.setItem('regalo_items', JSON.stringify(items));
+            document.getElementById('publish-form').reset();
+            alert('¡Objeto publicado con éxito!');
+            renderItems();
+            showSection('explore');
+        }
+
+        function renderItems() {
+            const container = document.getElementById('items-container');
+            const filter = document.getElementById('zone-filter').value;
+            container.innerHTML = '';
+            
+            const filtered = filter === 'Todas' ? items : items.filter(i => i.zone === filter);
+            
+            if(filtered.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm col-span-2 text-center py-8">No hay objetos publicados en esta zona todavía.</p>';
+                return;
+            }
+
+            filtered.forEach(item => {
+                container.innerHTML += `
+                    <div class="rounded-xl bg-white p-4 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-semibold mb-2">${item.zone}</span>
+                            <h3 class="font-bold text-gray-900 text-base">${item.title}</h3>
+                            <p class="text-gray-600 text-xs mt-1">${item.desc}</p>
+                        </div>
+                        <div class="mt-4 pt-2 border-t flex items-center justify-between text-xs text-gray-500">
+                            <span>Por: ${item.user}</span>
+                            <button onclick="startChat('${item.title}')" class="bg-blue-600 text-white font-bold px-3 py-1 rounded-lg">Pedir</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function startChat(title) {
+            document.getElementById('chat-box').innerHTML = `<div class="bg-blue-100 text-blue-800 p-2 rounded-lg text-xs">Iniciaste una consulta por: <strong>${title}</strong>. Coordina el retiro aquí debajo.</div>`;
+            showSection('messages');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            if(!input.value.trim()) return;
+            const chatBox = document.getElementById('chat-box');
+            chatBox.innerHTML += `<div class="text-right"><span class="inline-block bg-blue-600 text-white p-2 rounded-lg text-xs">${input.value}</span></div>`;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Carga inicial
+        if(profile) {
+            document.getElementById('user-name').value = profile.name;
+            document.getElementById('user-email').value = profile.email;
+        }
+        renderItems();
+    </script>
 </body>
 </html>
 
