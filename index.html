@@ -685,60 +685,55 @@
             selectedUploadedImage = null;
         }
 
-        async function handlePublish(e) {
-            e.preventDefault();
+        async function handlePublish(event) {
+    event.preventDefault();
 
-            const title = document.getElementById('postTitle').value;
-            const category = document.getElementById('postCategory').value;
-            const zone = document.getElementById('postZone').value;
-            const condition = document.getElementById('postCondition').value;
-            const imageUrlInput = document.getElementById('postImageUrl').value;
-            const description = document.getElementById('postDescription').value;
+    // Capturar datos del formulario modal
+    const title = document.getElementById('postTitle').value;
+    const category = document.getElementById('postCategory').value;
+    const zone = document.getElementById('postZone').value;
+    const condition = document.getElementById('postCondition').value;
+    const description = document.getElementById('postDescription').value;
+    const imageUrl = document.getElementById('postImageUrl') ? document.getElementById('postImageUrl').value : '';
 
-            let finalImage = selectedUploadedImage || imageUrlInput;
-            if (!finalImage) {
-                finalImage = categoryPlaceholders[category] || categoryPlaceholders['Otros'];
-            }
+    // Obtener la imagen en base64 si se subió un archivo local
+    let finalImage = imageUrl || 'https://unsplash.com';
+    if (typeof uploadedImageBase64 !== 'undefined' && uploadedImageBase64) {
+        finalImage = uploadedImageBase64;
+    }
 
-            const newGiftRecord = {
-                title,
-                category,
-                zone,
-                condition,
-                image_url: finalImage,
-                description,
-                address: currentUser ? currentUser.address : zone,
-                status: 'active'
-            };
+    // Crear el objeto con la estructura exacta que tu feed necesita
+    const newPost = {
+        id: Date.now().toString(),
+        title: title,
+        category: category,
+        zone: zone,
+        condition: condition,
+        description: description,
+        image_url: finalImage, // Asegura compatibilidad con el diseño original
+        user_name: currentUserProfile && currentUserProfile.name ? currentUserProfile.name : "Vecino Anónimo",
+        created_at: new Date().toISOString()
+    };
 
-            try {
-                const { data, error } = await _supabase.from('gifts').insert([newGiftRecord]).select();
-                if (!error && data && data.length > 0) {
-                    const inserted = data[0];
-                    items.unshift({
-                        id: inserted.id,
-                        userId: currentUser ? currentUser.id : 'usr_anon',
-                        title: inserted.title,
-                        category: inserted.category,
-                        zone: inserted.zone,
-                        condition: inserted.condition,
-                        image: inserted.image_url,
-                        description: inserted.description,
-                        owner: currentUser ? currentUser.name : 'Vecino',
-                        ownerPhone: currentUser ? currentUser.phone : '',
-                        address: inserted.address,
-                        status: 'active',
-                        date: 'Recién publicado'
-                    });
-                }
-            } catch (err) {
-                console.log('Error insertando en Supabase:', err);
-            }
+    // CORRECCIÓN CLAVE: Guardar en el mismo array que lee tu inicio
+    let currentItems = JSON.parse(localStorage.getItem('regalo_items')) || [];
+    currentItems.unshift(newPost);
+    localStorage.setItem('regalo_items', JSON.stringify(currentItems));
 
-            renderItems();
-            closePublishModal();
-            showToast("¡Objeto publicado y guardado en la base de datos!");
-        }
+    // Resetear formulario y cerrar la ventana
+    document.getElementById('publishForm').reset();
+    if (document.getElementById('imagePreviewContainer')) {
+        document.getElementById('imagePreviewContainer').classList.add('hidden');
+    }
+    if (typeof uploadedImageBase64 !== 'undefined') uploadedImageBase64 = null;
+
+    alert("¡Tu regalo fue publicado con éxito!");
+    
+    // Forzar el refresco visual de la pantalla
+    if (typeof closePublishModal === 'function') closePublishModal();
+    if (typeof renderItems === 'function') renderItems();
+    if (typeof loadPosts === 'function') loadPosts();
+}
 
         function openDetailModal(id) {
             triggerWithAdCheck(() => {
@@ -1132,5 +1127,5 @@
             }
         }
     </script>
-    </body>
+</body>
 </html>
