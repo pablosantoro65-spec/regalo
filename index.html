@@ -684,25 +684,34 @@
             document.getElementById('imagePreviewContainer').classList.add('hidden');
             selectedUploadedImage = null;
         }
-
-        async function handlePublish(event) {
+function handlePublish(event) {
     event.preventDefault();
 
-    // Capturar datos del formulario modal
+    // 1. Capturar datos del formulario modal
     const title = document.getElementById('postTitle').value;
     const category = document.getElementById('postCategory').value;
     const zone = document.getElementById('postZone').value;
     const condition = document.getElementById('postCondition').value;
     const description = document.getElementById('postDescription').value;
-    const imageUrl = document.getElementById('postImageUrl') ? document.getElementById('postImageUrl').value : '';
+    const postImgInput = document.getElementById('postImageUrl');
+    const imageUrl = postImgInput ? postImgInput.value : '';
 
-    // Obtener la imagen en base64 si se subió un archivo local
+    // 2. Definir la imagen final (local o placeholder)
     let finalImage = imageUrl || 'https://unsplash.com';
     if (typeof uploadedImageBase64 !== 'undefined' && uploadedImageBase64) {
         finalImage = uploadedImageBase64;
     }
 
-    // Crear el objeto con la estructura exacta que tu feed necesita
+    // 3. CORRECCIÓN: Obtener el nombre del usuario de forma segura
+    let authorName = "Vecino";
+    
+    // Intenta buscar el nombre en el formulario de perfil si está escrito en la pantalla
+    const nameInput = document.getElementById('userName') || document.getElementById('profileName');
+    if (nameInput && nameInput.value.trim() !== '') {
+        authorName = nameInput.value.trim();
+    }
+
+    // 4. Crear la estructura del objeto de regalo
     const newPost = {
         id: Date.now().toString(),
         title: title,
@@ -710,17 +719,17 @@
         zone: zone,
         condition: condition,
         description: description,
-        image_url: finalImage, // Asegura compatibilidad con el diseño original
-        user_name: currentUserProfile && currentUserProfile.name ? currentUserProfile.name : "Vecino Anónimo",
+        image_url: finalImage,
+        user_name: authorName,
         created_at: new Date().toISOString()
     };
 
-    
+    // 5. Guardar limpiamente en el LocalStorage
     let currentItems = JSON.parse(localStorage.getItem('regalo_items')) || [];
     currentItems.unshift(newPost);
     localStorage.setItem('regalo_items', JSON.stringify(currentItems));
 
-    // Resetear formulario y cerrar la ventana
+    // 6. Resetear el formulario del modal
     document.getElementById('publishForm').reset();
     if (document.getElementById('imagePreviewContainer')) {
         document.getElementById('imagePreviewContainer').classList.add('hidden');
@@ -729,10 +738,13 @@
 
     alert("¡Tu regalo fue publicado con éxito!");
     
-    // Forzar el refresco visual de la pantalla
+    // 7. Ejecutar los cierres y refrescos estándar de la página
     if (typeof closePublishModal === 'function') closePublishModal();
     if (typeof renderItems === 'function') renderItems();
     if (typeof loadPosts === 'function') loadPosts();
+    if (typeof updateFeed === 'function') updateFeed();
+}
+
 }
 
         function openDetailModal(id) {
