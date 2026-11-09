@@ -1,322 +1,1136 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full bg-slate-100">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Regalo - Donaciones por Zona</title>
-    <script src="https://tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cloudflare.com">
-    <link href="https://googleapis.com" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Supabase JS Client library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .tab-active { color: #4f46e5; border-top: 3px solid #4f46e5; background: linear-gradient(to bottom, #f0fdf4, transparent); }
-        .hidden { display: none; }
-        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); }
+        -webkit-tap-highlight-color: transparent;
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 via-gray-50 to-indigo-50/30 min-h-screen pb-24 text-slate-800 antialiased">
+<body class="h-full text-slate-800 flex flex-col antialiased selection:bg-brand-500 selection:text-white bg-slate-100">
 
-    <!-- Navbar Superior de Lujo -->
-    <header class="sticky top-0 z-50 glass border-b border-slate-200/80 px-5 py-4 shadow-sm flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <div class="bg-gradient-to-tr from-indigo-600 to-violet-600 text-white p-2.5 rounded-2xl shadow-lg shadow-indigo-200 animate-pulse">
-                <i class="fa-solid fa-hand-holding-heart text-xl"></i>
+    <!-- Mobile Top App Bar -->
+    <header class="bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-xs px-4 h-14 flex items-center justify-between">
+        <div class="flex items-center gap-2.5 cursor-pointer" onclick="resetFilters()">
+            <div class="bg-gradient-to-tr from-brand-600 to-emerald-400 text-white p-2 rounded-xl shadow-xs font-bold text-lg flex items-center justify-center w-9 h-9">
+                <i class="fa-solid fa-gift"></i>
             </div>
             <div>
-                <h1 class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-700 bg-clip-text text-transparent">Regalo</h1>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Donaciones por Zona</p>
+                <h1 class="text-base font-extrabold text-slate-900 tracking-tight leading-none">Regalo</h1>
+                <span id="userStatusSub" class="text-[10px] text-slate-400 font-medium">Cosas gratis cerca tuyo</span>
             </div>
         </div>
-        <button onclick="showSection('pro')" class="flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 px-4 py-2 text-xs font-black text-white shadow-md shadow-amber-200 hover:scale-105 transition-all cursor-pointer">
-            <i class="fa-solid fa-crown"></i> PASAR A PRO
-        </button>
+
+        <div class="flex items-center gap-2">
+            <!-- User Profile / Auth Button -->
+            <button id="userAuthBtn" onclick="openAuthModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-2.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 shadow-xs">
+                <i class="fa-solid fa-user-circle text-brand-600"></i>
+                <span id="userAuthName" class="text-[11px]">Ingresar</span>
+            </button>
+
+            <!-- Premium Toggle Pill -->
+            <button id="premiumBadge" onclick="openPaywallModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-xs px-2.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1 shadow-xs">
+                <i class="fa-solid fa-crown text-amber-600"></i>
+                <span id="premiumBadgeText" class="text-[11px]">PRO</span>
+            </button>
+        </div>
     </header>
 
-    <!-- Banner Principal Animado -->
-    <div id="main-banner" class="m-4 p-6 rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-violet-700 text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
-        <div class="relative z-10 space-y-1">
-            <span class="bg-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Comunidad Solidaria</span>
-            <h3 class="font-extrabold text-xl pt-1">¿Tenés cosas que ya no usás?</h3>
-            <p class="text-xs text-indigo-100 max-w-[80%]">Regalalas a vecinos de tu zona de forma fácil, segura y completamente gratuita.</p>
-        </div>
-        <i class="fa-solid fa-gifts text-8xl text-white/10 absolute -right-4 -bottom-4 transform rotate-12"></i>
-    </div>
+    <!-- Main Container -->
+    <main class="flex-grow max-w-md w-full mx-auto pb-24 pt-3 px-3">
 
-    <!-- Sección Explorar (Inicio) -->
-    <section id="explore-section" class="px-4 space-y-5">
-        <!-- Panel de Control y Filtros de Alta Gama -->
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 space-y-4">
-            <div class="flex items-center gap-2 text-slate-900 font-bold text-sm border-b pb-2">
-                <i class="fa-solid fa-sliders text-indigo-500"></i>
-                <h2>Buscador y Filtros de Cercanía</h2>
+        <!-- Mobile Search & Quick Zone Filter -->
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200/80 mb-3 space-y-2">
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="text" id="searchInput" placeholder="Buscar por producto (ej: mesa) o zona (ej: Palermo)..." class="w-full pl-9 pr-8 py-2.5 bg-slate-100 text-slate-800 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+                <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </button>
             </div>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-map-pin text-rose-500 mr-1"></i> Seleccionar Zona</label>
-                    <select id="zone-filter" onchange="renderItems()" class="w-full rounded-2xl border border-slate-200 p-3 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer">
-                        <option value="Todas">🌍 Todas las Zonas Residenciales</option>
-                        <option value="Zona Norte">📍 Zona Norte</option>
-                        <option value="Zona Sur">📍 Zona Sur</option>
-                        <option value="Zona Oeste">📍 Zona Oeste</option>
-                        <option value="Centro / CABA">📍 Centro / CABA</option>
-                        <option value="Córdoba Centro">📍 Córdoba Centro</option>
-                        <option value="Rosario Centro">📍 Rosario Centro</option>
+
+            <div class="flex items-center gap-2 pt-1">
+                <div class="relative flex-grow">
+                    <select id="zoneFilter" class="w-full pl-8 pr-7 py-2 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none">
+                        <option value="all">📍 Filtro por Zona (Todas)</option>
+                        <option value="Zona Norte">Zona Norte</option>
+                        <option value="Zona Sur">Zona Sur</option>
+                        <option value="Zona Oeste">Zona Oeste</option>
+                        <option value="Centro">Centro / CABA</option>
+                        <option value="Cordoba">Córdoba Centro</option>
+                        <option value="Rosario">Rosario Centro</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none"></i>
+                </div>
+
+                <div class="relative flex-grow">
+                    <select id="categoryFilter" class="w-full pl-8 pr-7 py-2 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none">
+                        <option value="all">🏷️ Categorías</option>
+                        <option value="Muebles">Muebles & Hogar</option>
+                        <option value="Ropa">Ropa & Calzado</option>
+                        <option value="Tecnología">Electrónica</option>
+                        <option value="Libros">Libros</option>
+                        <option value="Juguetes">Niños & Juguetes</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inline Ad Banner -->
+        <div id="inlineAdBanner" class="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 p-3 rounded-2xl shadow-xs mb-4 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2.5">
+                <span class="bg-amber-950 text-amber-300 font-extrabold text-[9px] px-1.5 py-0.5 rounded tracking-wide uppercase">Ad</span>
+                <span class="font-bold text-slate-950">¿Quieres navegar sin anuncios?</span>
+            </div>
+            <button onclick="openPaywallModal()" class="bg-slate-950 text-amber-400 px-3 py-1 rounded-xl font-bold text-[11px] shrink-0">
+                Hazte PRO
+            </button>
+        </div>
+
+        <!-- Category Horizontal Pills Bar -->
+        <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-2 mb-2">
+            <button onclick="quickFilterCategory('all')" class="cat-pill active shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold bg-brand-600 text-white shadow-xs">Todos</button>
+            <button onclick="quickFilterCategory('Muebles')" class="cat-pill shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-200">🪑 Muebles</button>
+            <button onclick="quickFilterCategory('Tecnología')" class="cat-pill shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-200">💻 Tecno</button>
+            <button onclick="quickFilterCategory('Ropa')" class="cat-pill shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-200">👕 Ropa</button>
+            <button onclick="quickFilterCategory('Juguetes')" class="cat-pill shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-200">🧸 Juguetes</button>
+            <button onclick="quickFilterCategory('Libros')" class="cat-pill shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-200">📚 Libros</button>
+        </div>
+
+        <!-- Counter Header -->
+        <div class="flex items-center justify-between px-1 mb-2">
+            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider" id="resultsTitle">Objetos disponibles</h2>
+            <span class="text-xs font-semibold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md" id="resultsCount">0 disponibles</span>
+        </div>
+
+        <!-- Product Feed -->
+        <div id="itemsGrid" class="space-y-3">
+            <!-- Dynamic Items -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-12 bg-white rounded-3xl border border-slate-200 p-6">
+            <div class="w-14 h-14 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                <i class="fa-solid fa-box-open"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800">No hay objetos publicados</h3>
+            <p class="text-slate-500 text-xs mt-1">Intenta cambiar la zona o el término de búsqueda.</p>
+            <button onclick="resetFilters()" class="mt-4 bg-brand-600 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs">Restablecer Filtros</button>
+        </div>
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 px-4 py-2 flex items-center justify-around max-w-md mx-auto">
+        <button onclick="switchToTab('feed')" id="navFeedBtn" class="flex flex-col items-center gap-1 text-brand-600">
+            <i class="fa-solid fa-house text-lg"></i>
+            <span class="text-[10px] font-bold">Inicio</span>
+        </button>
+
+        <button onclick="openPublishModal()" class="flex flex-col items-center justify-center bg-gradient-to-tr from-brand-600 to-emerald-400 text-white w-12 h-12 rounded-full shadow-lg -mt-5 border-4 border-white active:scale-95 transition">
+            <i class="fa-solid fa-plus text-lg"></i>
+        </button>
+
+        <button onclick="openMyChats()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-brand-600 relative">
+            <i class="fa-solid fa-comments text-lg"></i>
+            <span class="text-[10px] font-semibold text-slate-600">Mensajes</span>
+            <span id="unreadChatBadge" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+        </button>
+
+        <button onclick="openMyPublications()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-brand-600">
+            <i class="fa-solid fa-boxes-packing text-lg"></i>
+            <span class="text-[10px] font-semibold text-slate-600">Mis Regalos</span>
+        </button>
+    </nav>
+
+    <!-- Modal: Registro / Perfil de Usuario -->
+    <div id="authModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full p-5 relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 bg-brand-100 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-2 text-xl">
+                    <i class="fa-solid fa-user-gear"></i>
+                </div>
+                <h3 class="text-lg font-extrabold text-slate-900" id="authTitle">Perfil de Usuario</h3>
+                <p class="text-xs text-slate-500" id="authSub">Completa tus datos para publicar objetos y chatear.</p>
+            </div>
+
+            <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Nombre Completo *</label>
+                    <input type="text" id="userName" required placeholder="Ej: Ana María Gómez" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Correo Electrónico *</label>
+                    <input type="email" id="userEmail" required placeholder="tu@email.com" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+               
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Zona Predeterminada</label>
+                    <select id="userDefaultZone" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none">
+                        <option value="Zona Norte">Zona Norte</option>
+                        <option value="Zona Sur">Zona Sur</option>
+                        <option value="Zona Oeste">Zona Oeste</option>
+                        <option value="Centro">Centro / CABA</option>
+                        <option value="Cordoba">Córdoba Centro</option>
+                        <option value="Rosario">Rosario Centro</option>
                     </select>
                 </div>
-                <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-layer-group text-purple-500 mr-1"></i> Categorías</label>
-                    <select id="cat-filter" onchange="renderItems()" class="w-full rounded-2xl border border-slate-200 p-3 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer">
-                        <option value="Todas">📦 Todas las Categorías</option>
-                        <option value="Muebles & Hogar">🪑 Muebles & Hogar</option>
-                        <option value="Ropa & Calzado">👕 Ropa & Calzado</option>
-                        <option value="Electrónica">💻 Electrónica & Tecno</option>
-                        <option value="Libros">📚 Libros & Revistas</option>
-                        <option value="Niños & Juguetes">🧸 Niños & Juguetes</option>
-                        <option value="Otros">✨ Otros Objetos</option>
-                    </select>
-                </div>
-            </div>
-        </div>
 
-        <!-- Encabezado de Feed -->
-        <div class="flex items-center justify-between">
-            <h2 class="text-lg font-black text-slate-900 tracking-tight">Publicaciones Recientes</h2>
-            <div class="flex items-center gap-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full">
-                <span id="items-count">0</span> disponibles hoy
-            </div>
-        </div>
-        
-        <!-- Grid de Productos -->
-        <div id="items-container" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"></div>
-    </section>
-
-    <!-- Sección Publicar -->
-    <section id="publish-section" class="hidden px-4">
-        <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 max-w-xl mx-auto space-y-5">
-            <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
-                <div class="bg-indigo-50 text-indigo-600 p-3 rounded-2xl"><i class="fa-solid fa-circle-plus text-xl"></i></div>
-                <div>
-                    <h2 class="text-xl font-extrabold text-slate-900">¿Qué vas a regalar hoy?</h2>
-                    <p class="text-xs text-slate-400">Completá los detalles para publicar tu donación.</p>
-                </div>
-            </div>
-            
-            <form id="publish-form" onsubmit="handlePublish(event)" class="space-y-4">
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-600">Título descriptivo del regalo *</label>
-                    <input type="text" id="item-title" required placeholder="Ej: Mesa ratona de living, Zapatillas talle 40..." class="w-full rounded-2xl border border-slate-200 p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-600">Categoría *</label>
-                        <select id="item-cat" required class="w-full rounded-2xl border border-slate-200 p-3 text-sm bg-white outline-none">
-                            <option value="Muebles & Hogar">Muebles & Hogar</option>
-                            <option value="Ropa & Calzado">Ropa & Calzado</option>
-                            <option value="Electrónica">Electrónica</option>
-                            <option value="Libros">Libros</option>
-                            <option value="Niños & Juguetes">Niños & Juguetes</option>
-                            <option value="Otros">Otros</option>
-                        </select>
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-600">Tu Ubicación / Zona *</label>
-                        <select id="item-zone" required class="w-full rounded-2xl border border-slate-200 p-3 text-sm bg-white outline-none">
-                            <option value="Zona Norte">Zona Norte</option>
-                            <option value="Zona Sur">Zona Sur</option>
-                            <option value="Zona Oeste">Zona Oeste</option>
-                            <option value="Centro / CABA">Centro / CABA</option>
-                            <option value="Córdoba Centro">Córdoba Centro</option>
-                            <option value="Rosario Centro">Rosario Centro</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-600">Estado del Objeto</label>
-                    <select id="item-status" class="w-full rounded-2xl border border-slate-200 p-3 text-sm bg-white outline-none">
-                        <option value="✨ Como nuevo (Excelente)">✨ Como nuevo (Excelente)</option>
-                        <option value="👍 Buen estado (Listo para usar)">👍 Buen estado (Listo para usar)</option>
-                        <option value="🔧 Usado con detalles para reparar">🔧 Usado con detalles para reparar</option>
-                    </select>
-                </div>
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-600">Descripción e indicaciones para el retiro *</label>
-```html
-    <!-- Sección Mensajes -->
-    <section id="messages-section" class="hidden px-4">
-        <div class="bg-white rounded-3xl p-5 shadow-xl border border-slate-100 max-w-xl mx-auto flex flex-col h-[68vh] space-y-4">
-            <div class="flex items-center gap-3 border-b border-slate-100 pb-3">
-                <div class="bg-emerald-50 text-emerald-600 p-2.5 rounded-2xl"><i class="fa-solid fa-comments text-xl"></i></div>
-                <div>
-                    <h2 class="text-base font-extrabold text-slate-900" id="chat-title">Chat de Coordinación</h2>
-                    <p class="text-xs text-slate-400">Acordá el retiro seguro con tus vecinos de forma directa.</p>
-                </div>
-            </div>
-            
-            <!-- Ventana de Chat Premium -->
-            <div id="chat-box" class="flex-1 overflow-y-auto p-3 bg-slate-50/50 rounded-2xl border border-slate-100 text-sm space-y-3 min-h-[250px]">
-                <div class="text-center text-slate-400 font-medium text-xs py-16 flex flex-col items-center gap-2">
-                    <i class="fa-solid fa-comments-blur text-3xl text-slate-300"></i>
-                    No tenés chats activos. <br><span class="text-[11px] font-normal text-slate-400">Entrá al inicio y tocá en "Pedir" sobre cualquier objeto para iniciar una charla.</span>
-                </div>
-            </div>
-            
-            <div class="flex gap-2">
-                <input type="text" id="chat-input" placeholder="Escribí un mensaje..." class="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
-                <button onclick="sendMessage()" class="rounded-2xl bg-indigo-600 px-5 text-white font-bold hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-100 cursor-pointer"><i class="fa-solid fa-paper-plane"></i></button>
-            </div>
-        </div>
-    </section>
-
-    <!-- Sección Perfil (Corregida: Sin Domicilio ni Teléfono) -->
-    <section id="profile-section" class="hidden px-4">
-        <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 max-w-xl mx-auto space-y-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-violet-50 text-violet-600 p-3 rounded-2xl"><i class="fa-solid fa-user-gear text-xl"></i></div>
-                <div>
-                    <h2 class="text-lg font-extrabold text-slate-900">Configuración de Perfil</h2>
-                    <p class="text-xs text-slate-400">Tu privacidad importa. Solo requerimos estos dos datos esenciales.</p>
-                </div>
-            </div>
-            
-            <form id="profile-form" onsubmit="handleSaveProfile(event)" class="space-y-4 pt-2">
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-600">Nombre Completo (Así te verán tus vecinos) *</label>
-                    <input type="text" id="user-name" required placeholder="Ej: Lucas Martínez" class="w-full rounded-2xl border border-slate-200 p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-600">Correo Electrónico de Contacto *</label>
-                    <input type="email" id="user-email" required placeholder="lucas@miemail.com" class="w-full rounded-2xl border border-slate-200 p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-                </div>
-                <button type="submit" class="w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 p-3.5 font-bold text-white shadow-lg shadow-emerald-100 hover:opacity-95 transition-opacity text-sm cursor-pointer mt-2">
-                    <i class="fa-solid fa-circle-check mr-1"></i> Guardar y Habilitar Publicaciones
+                <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs shadow-md transition mt-2">
+                    Guardar Datos del Perfil
                 </button>
             </form>
         </div>
-    </section>
+    </div>
 
-    <!-- Sección PRO Premium -->
-    <section id="pro-section" class="hidden px-4 text-center max-w-md mx-auto">
-        <div class="bg-white rounded-[2rem] p-7 border border-amber-200 shadow-2xl shadow-amber-100/50 space-y-5 relative overflow-hidden">
-            <div class="absolute top-0 right-0 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-black text-[9px] uppercase px-5 py-1.5 rounded-bl-2xl tracking-widest shadow">EXCLUSIVO</div>
-            <div class="mx-auto w-16 h-16 bg-gradient-to-tr from-amber-50 to-orange-50 rounded-2xl flex items-center justify-center text-amber-500 text-3xl shadow-inner border border-amber-100"><i class="fa-solid fa-crown"></i></div>
-            <div class="space-y-1">
-                <h2 class="text-2xl font-black text-slate-900 tracking-tight">Experiencia Regalo PRO</h2>
-                <p class="text-xs text-slate-400 leading-relaxed px-2">Disfrutá de la app sin anuncios de publicidad, destacá tus donaciones en las primeras posiciones y ayudá al desarrollo de la comunidad.</p>
+    <!-- Modal: Detalle de Producto -->
+    <div id="detailModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto hide-scrollbar shadow-2xl p-5 relative">
+            <button onclick="closeDetailModal()" class="absolute top-4 right-4 bg-slate-100 text-slate-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm z-10">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div id="detailContent">
+                <!-- Dynamic Content -->
             </div>
-            <div class="bg-amber-50/50 rounded-2xl p-4 inline-block border border-amber-100/60">
-                <span class="text-3xl font-black text-amber-600">$2.99 USD</span><span class="text-xs text-amber-500 font-bold uppercase tracking-wider"> / mes</span>
-            </div>
-            <button onclick="alert('¡Muchísimas gracias por apoyar el prototipo de la app!')" class="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 py-3.5 font-black text-white shadow-xl shadow-amber-200 transition-all active:scale-95 cursor-pointer text-sm">Suscribirme Ahora</button>
         </div>
-    </section>
+    </div>
 
-    <!-- Barra de Navegación Inferior Moderna (Estilo iOS/Android App) -->
-    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-slate-200 flex justify-around shadow-2xl text-slate-400 z-50">
-        <button onclick="showSection('explore')" id="nav-explore" class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors tab-active"><i class="fa-solid fa-house-heart text-lg"></i><span class="text-[10px] font-bold">Inicio</span></button>
-        <button onclick="showSection('publish')" id="nav-publish" class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors"><i class="fa-solid fa-circle-plus text-lg"></i><span class="text-[10px] font-bold">Publicar</span></button>
-        <button onclick="showSection('messages')" id="nav-messages" class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors"><i class="fa-solid fa-messages text-lg"></i><span class="text-[10px] font-bold">Mensajes</span></button>
-        <button onclick="showSection('profile')" id="nav-profile" class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors"><i class="fa-solid fa-user-astronaut text-lg"></i><span class="text-[10px] font-bold">Mi Perfil</span></button>
-    </nav>
+   <!-- Modal: Publicar Objeto (soporta fotos de archivo o URL) -->
+    <div id="publishModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto hide-scrollbar shadow-2xl p-5 relative">
+            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4"></div>
+            <button onclick="closePublishModal()" class="absolute top-4 right-4 text-slate-400 w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
 
-    <!-- Lógica de Datos y Renderizado -->
+            <h3 class="text-lg font-extrabold text-slate-900">Publicar un regalo</h3>
+            <p class="text-xs text-slate-500 mb-4">Ayuda a alguien reglando lo que ya no utilizas.</p>
+
+            <form id="publishForm" onsubmit="handlePublish(event)" class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Título del Objeto *</label>
+                    <input type="text" id="postTitle" required placeholder="Ej: Mesa de madera con 4 sillas" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Categoría *</label>
+                        <select id="postCategory" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none">
+                            <option value="Muebles">Muebles</option>
+                            <option value="Ropa">Ropa</option>
+                            <option value="Tecnología">Tecnología</option>
+                            <option value="Libros">Libros</option>
+                            <option value="Juguetes">Juguetes</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Zona / Barrio *</label>
+                        <select id="postZone" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none font-medium">
+                            <option value="Zona Norte">Zona Norte</option>
+                            <option value="Zona Sur">Zona Sur</option>
+                            <option value="Zona Oeste">Zona Oeste</option>
+                            <option value="Centro">Centro / CABA</option>
+                            <option value="Cordoba">Córdoba Centro</option>
+                            <option value="Rosario">Rosario Centro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Estado del Producto</label>
+                    <select id="postCondition" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none">
+                        <option value="Como nuevo">Como nuevo</option>
+                        <option value="Buen estado">Buen estado</option>
+                        <option value="Usado con detalles">Usado con detalles</option>
+                        <option value="Para reparar / Piezas">Para reparar / Piezas</option>
+                    </select>
+                </div>
+
+                <!-- Foto subida o URL -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Foto del regalo</label>
+                    <div class="space-y-2">
+                        <input type="file" id="postFileInput" accept="image/*" onchange="previewSelectedImage(event)" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                        <input type="url" id="postImageUrl" placeholder="O pega el link de una imagen (https://...)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none">
+                    </div>
+                    <div id="imagePreviewContainer" class="hidden mt-2 relative w-full h-32 rounded-xl overflow-hidden bg-slate-100">
+                        <img id="imagePreview" src="" class="w-full h-full object-cover">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Descripción y detalles de retiro *</label>
+                    <textarea id="postDescription" rows="3" required placeholder="Aclara punto de encuentro, horarios disponibles o dirección exacta..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none"></textarea>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs shadow-md transition mt-2">
+                    Publicar Regalando
+                </button>
+            </form>
+        </div>
+    </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Chat Interno en la App -->
+    <div id="chatModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full h-[85vh] flex flex-col relative overflow-hidden shadow-2xl">
+            <!-- Header Chat -->
+            <div class="p-3.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center gap-2.5">
+                    <button onclick="closeChatModal()" class="text-slate-400 hover:text-white mr-1 text-sm">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div>
+                        <h4 id="chatTitle" class="text-xs font-bold text-white leading-tight">Chat de Coordinación</h4>
+                        <span id="chatSub" class="text-[10px] text-slate-400">Coordinando entrega</span>
+                    </div>
+                </div>
+                <button onclick="closeChatModal()" class="text-slate-400 hover:text-white text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Chat Messages Box -->
+            <div id="chatMessagesBox" class="flex-grow p-4 overflow-y-auto space-y-3 bg-slate-50 text-xs">
+                <!-- Messages render dynamically -->
+            </div>
+
+            <!-- Chat Input -->
+            <form onsubmit="sendChatMessage(event)" class="p-3 bg-white border-t border-slate-200 flex items-center gap-2">
+                <input type="text" id="chatInput" required placeholder="Escribe un mensaje para coordinar..." class="flex-grow px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold shadow-xs">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Mis Publicaciones (Para dar de baja) -->
+    <div id="myPubsModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full max-h-[85vh] overflow-y-auto hide-scrollbar p-5 relative">
+            <button onclick="closeMyPubsModal()" class="absolute top-4 right-4 text-slate-400 w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="text-base font-extrabold text-slate-900 mb-1">Mis Regalos Publicados</h3>
+            <p class="text-xs text-slate-500 mb-4">Marca tus publicaciones como "Entregado" una vez que alguien lo haya retirado.</p>
+
+            <div id="myPubsList" class="space-y-3">
+                <!-- Dynamic user items -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Mis Mensajes / Chats activos -->
+    <div id="myChatsModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full max-h-[85vh] overflow-y-auto hide-scrollbar p-5 relative">
+            <button onclick="closeMyChatsModal()" class="absolute top-4 right-4 text-slate-400 w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="text-base font-extrabold text-slate-900 mb-1">Mensajes y Conversaciones</h3>
+            <p class="text-xs text-slate-500 mb-4">Conversaciones activas con vecinos para coordinar entregas.</p>
+
+            <div id="myChatsList" class="space-y-2">
+                <!-- Dynamic list of chats -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Anuncio Patrocinado Intersticial -->
+    <div id="adModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xs w-full shadow-2xl p-5 text-center relative overflow-hidden">
+            <div class="bg-amber-400 text-amber-950 font-extrabold text-[9px] uppercase tracking-wider py-1 px-3 absolute top-0 left-0 right-0">
+                Publicidad
+            </div>
+
+            <div class="mt-4 mb-3">
+                <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-2 text-xl">
+                    <i class="fa-solid fa-bullhorn"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-900" id="adTitle">Anuncio Patrocinado</h3>
+                <p class="text-slate-500 text-xs mt-1 leading-relaxed" id="adBody">
+                    Regalo es 100% gratuito. ¡Hazte PRO para navegar sin anuncios!
+                </p>
+                
+                <div class="mt-3 bg-slate-50 border border-slate-200 p-2.5 rounded-xl flex items-center justify-between">
+                    <span class="text-[11px] text-slate-500">Omitir anuncios</span>
+                    <button onclick="upgradeToPremiumFromAd()" class="text-xs font-bold text-amber-600 hover:text-amber-700 underline flex items-center gap-1">
+                        <i class="fa-solid fa-crown"></i> Ser PRO
+                    </button>
+                </div>
+            </div>
+
+            <button id="skipAdBtn" onclick="closeAd()" class="w-full py-2.5 bg-slate-200 text-slate-500 font-bold rounded-xl text-xs transition cursor-not-allowed" disabled>
+                Saltar en <span id="adTimer">5</span>s...
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Paywall / Planes Premium -->
+    <div id="paywallModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full p-6 relative">
+            <button onclick="closePaywallModal()" class="absolute top-4 right-4 text-slate-400 w-8 h-8 rounded-full flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center mb-5">
+                <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-2 text-2xl shadow-sm">
+                    <i class="fa-solid fa-crown"></i>
+                </div>
+                <h3 class="text-xl font-extrabold text-slate-900">Regalo PRO</h3>
+                <p class="text-xs text-slate-500 mt-1">Disfruta la experiencia sin interrupciones.</p>
+            </div>
+
+            <div class="space-y-2.5 mb-6">
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <div class="w-7 h-7 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0 text-xs font-bold">✓</div>
+                    <span class="text-xs font-semibold text-slate-700">Navegación sin publicidad.</span>
+                </div>
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <div class="w-7 h-7 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0 text-xs font-bold">✓</div>
+                    <span class="text-xs font-semibold text-slate-700">Publicaciones destacadas en los primeros puestos.</span>
+                </div>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Suscripción Mensual</span>
+                    <span class="text-lg font-extrabold text-amber-950">$2.99 USD <span class="text-xs font-medium text-amber-700">/mes</span></span>
+                </div>
+                <button onclick="simulateSubscription()" class="bg-amber-500 hover:bg-amber-600 text-amber-950 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-xs">
+                    Suscribirme
+                </button>
+            </div>
+
+            <button onclick="closePaywallModal()" class="w-full text-center text-xs text-slate-400 font-semibold py-1">
+                Continuar con versión gratuita (con anuncios)
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-xl transition-all duration-300 transform translate-y-20 opacity-0 flex items-center gap-2.5 z-50 text-xs max-w-xs w-full justify-center">
+        <i class="fa-solid fa-circle-check text-brand-500" id="toastIcon"></i>
+        <span id="toastMessage" class="font-semibold"></span>
+    </div>
+
     <script>
-        const mockObjects = [
-            { id: 101, title: "Sillón de living individual", zone: "Zona Norte", cat: "Muebles & Hogar", status: "👍 Buen estado (Listo para usar)", desc: "De tela chenille color gris claro. Muy cómodo, ideal para departamentos. Lo entrego con almohadón.", user: "Mariano P." },
-            { id: 102, title: "Campera impermeable abrigada", zone: "Zona Sur", cat: "Ropa & Calzado", status: "✨ Como nuevo (Excelente)", desc: "Talle L de adulto, súper abrigada, color negro con azul. No tiene marcas ni detalles.", user: "Sofía T." },
-            { id: 103, title: "Teclado mecánico para PC", zone: "Centro / CABA", cat: "Electrónica", status: "✨ Como nuevo (Excelente)", desc: "Teclado gamer marca Redragon, luces RGB funcionando al 100%. Lo cambié por otro modelo.", user: "Gaston B." }
-        ];
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://nykuoihdvymmbtaudtgy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55a3VvaWhkdnltbWJ0YXVkdGd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQxODE5MTIsImV4cCI6MjEwOTc1NzkxMn0.ieoFS164PxYVVfstHN5IlT8O9o9pOEB0rCbJxnnu9Os';
+        
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let items = JSON.parse(localStorage.getItem('regalo_items'));
-        if (!items || items.length === 0) {
-            items = mockObjects;
-            localStorage.setItem('regalo_items', JSON.stringify(items));
-        }
+        let currentUser = null;
+        let isPremium = false;
+        let pendingAction = null;
+        let adCountdownTimer = null;
+        let adSecondsRemaining = 5;
+        let selectedUploadedImage = null;
+        let currentActiveChatId = null;
 
-        let profile = JSON.parse(localStorage.getItem('regalo_profile')) || null;
+        let items = [];
+        let chats = [];
 
-        function showSection(section) {
-            ['explore', 'publish', 'messages', 'profile', 'pro'].forEach(s => {
-                document.getElementById(`${s}-section`).classList.add('hidden');
-                const navBtn = document.getElementById(`nav-${s}`);
-                if(navBtn) navBtn.classList.remove('active-tab', 'tab-active');
+        const categoryPlaceholders = {
+            "Muebles": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80",
+            "Ropa": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=600&q=80",
+            "Tecnología": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80",
+            "Libros": "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=600&q=80",
+            "Juguetes": "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=600&q=80",
+            "Otros": "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80"
+        };
+
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const zoneFilter = document.getElementById('zoneFilter');
+        const categoryFilter = document.getElementById('categoryFilter');
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadGiftsFromSupabase();
+
+            const savedUser = localStorage.getItem('regalo_user');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    updateUserUI();
+                } catch(err){}
+            }
+
+            searchInput.addEventListener('input', (e) => {
+                if (e.target.value.length > 0) clearSearchBtn.classList.remove('hidden');
+                else clearSearchBtn.classList.add('hidden');
+                renderItems();
             });
-            document.getElementById(`${section}-section`).classList.remove('hidden');
-            const activeNav = document.getElementById(`nav-${section}`);
-            if(activeNav) activeNav.classList.add('tab-active');
-            
-            // Ocultar banner superior si no es inicio
-            const banner = document.getElementById('main-banner');
-            if(section === 'explore') banner.classList.remove('hidden');
-            else banner.classList.add('hidden');
+
+            zoneFilter.addEventListener('change', renderItems);
+            categoryFilter.addEventListener('change', renderItems);
+        });
+
+        async function loadGiftsFromSupabase() {
+            try {
+                const { data, error } = await _supabase
+                    .from('gifts')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!error && data) {
+                    items = data.map(g => ({
+                        id: g.id,
+                        userId: g.user_id || 'usr_anon',
+                        title: g.title,
+                        category: g.category,
+                        zone: g.zone,
+                        condition: g.condition,
+                        image: g.image_url || categoryPlaceholders[g.category] || categoryPlaceholders['Otros'],
+                        description: g.description,
+                        owner: g.owner_name || 'Vecino/a',
+                        ownerPhone: g.phone || '',
+                        address: g.address || g.zone,
+                        status: g.status || 'active',
+                        date: new Date(g.created_at).toLocaleDateString()
+                    }));
+                }
+            } catch (e) {
+                console.log('Cargando items modo local:', e);
+            }
+            renderItems();
         }
 
-        function handleSaveProfile(e) {
-            e.preventDefault();
-            profile = {
-                name: document.getElementById('user-name').value,
-                email: document.getElementById('user-email').value
-            };
-            localStorage.setItem('regalo_profile', JSON.stringify(profile));
-            alert('¡Tu perfil se activó de forma segura! Ya podés publicar regalos o coordinar retiros.');
-            showSection('explore');
+        function updateUserUI() {
+            if (currentUser) {
+                document.getElementById('userAuthName').textContent = currentUser.name.split(' ')[0];
+                document.getElementById('userName').value = currentUser.name || '';
+                document.getElementById('userEmail').value = currentUser.email || '';
+                document.getElementById('userPhone').value = currentUser.phone || '';
+                document.getElementById('userAddress').value = currentUser.address || '';
+                document.getElementById('userDefaultZone').value = currentUser.zone || 'Centro';
+            }
         }
 
-        function handlePublish(e) {
-            e.preventDefault();
-            if(!profile) {
-                alert('Antes de publicar un regalo, por favor ingresá tu Nombre en la pestaña "Mi Perfil".');
-                showSection('profile');
+        function clearSearch() {
+            searchInput.value = '';
+            clearSearchBtn.classList.add('hidden');
+            renderItems();
+        }
+
+        function renderItems() {
+            const query = searchInput.value.toLowerCase().trim();
+            const selectedZone = zoneFilter.value;
+            const selectedCategory = categoryFilter.value;
+
+            const filtered = items.filter(item => {
+                const isActive = item.status === 'active';
+                
+                const matchesSearch = !query || 
+                    item.title.toLowerCase().includes(query) || 
+                    item.description.toLowerCase().includes(query) || 
+                    item.zone.toLowerCase().includes(query) ||
+                    (item.address && item.address.toLowerCase().includes(query));
+
+                const matchesZoneSelect = selectedZone === 'all' || item.zone === selectedZone;
+                const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+
+                return isActive && matchesSearch && matchesZoneSelect && matchesCategory;
+            });
+
+            document.getElementById('resultsCount').textContent = `${filtered.length} disponible(s)`;
+
+            const grid = document.getElementById('itemsGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                grid.innerHTML = filtered.map(item => `
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col active:scale-[0.99] transition duration-150">
+                        <div class="relative h-44 bg-slate-100">
+                            <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover" onerror="this.src='${categoryPlaceholders[item.category] || categoryPlaceholders['Otros']}'">
+                            <span class="absolute top-2.5 left-2.5 bg-brand-600/90 backdrop-blur-xs text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                ${item.category}
+                            </span>
+                            <span class="absolute top-2.5 right-2.5 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                📍 ${item.zone}
+                            </span>
+                        </div>
+
+                        <div class="p-3.5 flex flex-col justify-between flex-grow">
+                            <div>
+                                <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                                    <span class="font-medium text-slate-500">${item.date}</span>
+                                    <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-semibold text-[10px]">${item.condition}</span>
+                                </div>
+                                <h3 class="font-bold text-slate-900 text-sm leading-snug">${item.title}</h3>
+                                <p class="text-slate-500 text-xs mt-1 line-clamp-2 leading-normal">${item.description}</p>
+                            </div>
+
+                            <div class="pt-3 mt-2 border-t border-slate-100 flex items-center justify-between">
+                                <span class="text-xs font-medium text-slate-500 truncate max-w-[130px]">
+                                    <i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>${item.address || item.zone}
+                                </span>
+                                <button onclick="openDetailModal(${item.id})" class="bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1">
+                                    Ver Regalo <i class="fa-solid fa-chevron-right text-[9px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function quickFilterCategory(cat) {
+            categoryFilter.value = cat;
+            document.querySelectorAll('.cat-pill').forEach(btn => {
+                if ((cat === 'all' && btn.textContent.includes('Todos')) || btn.textContent.includes(cat)) {
+                    btn.className = "cat-pill shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold bg-brand-600 text-white shadow-xs";
+                } else {
+                    btn.className = "cat-pill shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-200";
+                }
+            });
+            renderItems();
+        }
+
+        function resetFilters() {
+            searchInput.value = '';
+            clearSearchBtn.classList.add('hidden');
+            zoneFilter.value = 'all';
+            categoryFilter.value = 'all';
+            quickFilterCategory('all');
+        }
+
+        function previewSelectedImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    selectedUploadedImage = e.target.result;
+                    document.getElementById('imagePreview').src = selectedUploadedImage;
+                    document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function openPublishModal() {
+            if (!currentUser) {
+                openAuthModal();
+                showToast("Por favor completa tus datos primero para publicar.");
                 return;
             }
-            const newItem = {
-                id: Date.now(),
-                title: document.getElementById('item-title').value,
-                zone: document.getElementById('item-zone').value,
-cat: document.getElementById('item-cat').value,
-status: document.getElementById('item-status').value,
-desc: document.getElementById('item-desc').value,
-user: profile.name
-};
-items.unshift(newItem);
-localStorage.setItem('regalo_items', JSON.stringify(items));
-document.getElementById('publish-form').reset();
-alert('¡Éxito! Tu objeto ya aparece visible para toda la comunidad.');
-renderItems();
-showSection('explore');
-}
-function renderItems() {
-const container = document.getElementById('items-container');
-const zoneValue = document.getElementById('zone-filter').value;
-const catValue = document.getElementById('cat-filter').value;
-container.innerHTML = '';
-let filtered = items;
-if (zoneValue !== 'Todas') filtered = filtered.filter(i => i.zone === zoneValue);
-if (catValue !== 'Todas') filtered = filtered.filter(i => i.cat === catValue);
-document.getElementById('items-count').innerText = filtered.length;
-if(filtered.length === 0) {
-container.innerHTML =  <div class="col-span-full text-center py-16 bg-white rounded-3xl border border-slate-100 p-8 shadow-inner"> <div class="w-12 h-12 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mx-auto text-xl mb-3"><i class="fa-solid fa-boxes-packing"></i></div> <p class="text-slate-600 font-bold text-sm">No hay objetos con estos filtros de búsqueda</p> <p class="text-slate-400 text-xs mt-1">Intentá ampliando tu zona o buscando en otra categoría diferente.</p> </div>;
-return;
-}
-filtered.forEach(item => {
-container.innerHTML +=  <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100/80 flex flex-col justify-between hover:shadow-xl transition-all duration-300 group hover:-translate-y-0.5"> <div> <div class="flex items-center gap-1.5 flex-wrap mb-3 text-[10px] font-bold"> <span class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-xl flex items-center gap-1"><i class="fa-solid fa-location-dot text-[9px]"></i>${item.zone}</span> <span class="bg-purple-50 text-purple-700 px-2.5 py-1 rounded-xl">${item.cat}</span> <span class="bg-slate-100 text-slate-500 px-2.5 py-1 rounded-xl">${item.status}</span> </div> <h3 class="font-extrabold text-slate-900 text-base leading-snug tracking-tight group-hover:text-indigo-600 transition-colors">${item.title}</h3> <p class="text-slate-500 text-xs mt-2 line-clamp-3 bg-slate-50/50 p-3 rounded-2xl border border-slate-100/50 italic leading-relaxed">"${item.desc}"</p> </div> <div class="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs"> <div class="flex items-center gap-2 text-slate-500 font-semibold"> <div class="w-6 h-6 rounded-xl bg-gradient-to-tr from-indigo-50 to-purple-50 text-indigo-600 text-[10px] font-extrabold flex items-center justify-center border border-indigo-100/50 uppercase">${item.user.charAt(0)}</div> <span class="truncate max-w-[120px]">${item.user}</span> </div> <button onclick="startChat('${item.title}', '${item.user}')" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold px-4 py-2 rounded-xl shadow-md shadow-indigo-100 transition-all cursor-pointer active:scale-95"> <i class="fa-solid fa-comment-dots mr-1"></i> Pedir </button> </div> </div>;
-});
-}
-function startChat(title, user) {
-document.getElementById('chat-title').innerText = Mensaje para ${user};
-document.getElementById('chat-box').innerHTML =  <div class="bg-indigo-50/80 border border-indigo-100 p-3.5 rounded-2xl text-xs space-y-1"> <p class="font-extrabold text-indigo-950 flex items-center gap-1"><i class="fa-solid fa-circle-info text-indigo-600"></i> Solicitud de Regalo enviada</p> <p class="text-indigo-800 leading-normal">Estás consultando por: <strong>"${title}"</strong>. Acordá un punto de encuentro y un horario conveniente para retirarlo.</p> </div> <div class="text-left pt-1"><span class="inline-block bg-white border border-slate-100 p-3 rounded-2xl text-xs text-slate-700 shadow-sm font-semibold">¡Hola! Estoy muy interesado en el objeto "${title}" que regalás. ¿Estará disponible para que lo pase a retirar? Muchas gracias. 😊</span></div>;
-showSection('messages');
-}
-function sendMessage() {
-const input = document.getElementById('chat-input');
-if(!input.value.trim()) return;
-const chatBox = document.getElementById('chat-box');
-if(chatBox.innerText.includes("No tenés chats activos")) chatBox.innerHTML = '';
-chatBox.innerHTML +=  <div class="text-right"> <span class="inline-block bg-gradient-to-r from-indigo-600 to-violet-600 text-white p-3 rounded-2xl text-xs font-semibold shadow-md shadow-indigo-50 max-w-[80%] text-left">${input.value}</span> </div>;
-input.value = '';
-chatBox.scrollTop = chatBox.scrollHeight;
-}
-if(profile) {
-document.getElementById('user-name').value = profile.name;
-document.getElementById('user-email').value = profile.email;
-}
-renderItems();
+            triggerWithAdCheck(() => {
+                document.getElementById('publishModal').classList.remove('hidden');
+            });
+        }
+
+        function closePublishModal() {
+            document.getElementById('publishModal').classList.add('hidden');
+            document.getElementById('publishForm').reset();
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            selectedUploadedImage = null;
+        }
+
+        async function handlePublish(e) {
+            e.preventDefault();
+
+            const title = document.getElementById('postTitle').value;
+            const category = document.getElementById('postCategory').value;
+            const zone = document.getElementById('postZone').value;
+            const condition = document.getElementById('postCondition').value;
+            const imageUrlInput = document.getElementById('postImageUrl').value;
+            const description = document.getElementById('postDescription').value;
+
+            let finalImage = selectedUploadedImage || imageUrlInput;
+            if (!finalImage) {
+                finalImage = categoryPlaceholders[category] || categoryPlaceholders['Otros'];
+            }
+
+            const newGiftRecord = {
+                title,
+                category,
+                zone,
+                condition,
+                image_url: finalImage,
+                description,
+                address: currentUser ? currentUser.address : zone,
+                status: 'active'
+            };
+
+            try {
+                const { data, error } = await _supabase.from('gifts').insert([newGiftRecord]).select();
+                if (!error && data && data.length > 0) {
+                    const inserted = data[0];
+                    items.unshift({
+                        id: inserted.id,
+                        userId: currentUser ? currentUser.id : 'usr_anon',
+                        title: inserted.title,
+                        category: inserted.category,
+                        zone: inserted.zone,
+                        condition: inserted.condition,
+                        image: inserted.image_url,
+                        description: inserted.description,
+                        owner: currentUser ? currentUser.name : 'Vecino',
+                        ownerPhone: currentUser ? currentUser.phone : '',
+                        address: inserted.address,
+                        status: 'active',
+                        date: 'Recién publicado'
+                    });
+                }
+            } catch (err) {
+                console.log('Error insertando en Supabase:', err);
+            }
+
+            renderItems();
+            closePublishModal();
+            showToast("¡Objeto publicado y guardado en la base de datos!");
+        }
+
+        function openDetailModal(id) {
+            triggerWithAdCheck(() => {
+                const item = items.find(i => i.id === id);
+                if (!item) return;
+
+                const isMyItem = currentUser && item.userId === currentUser.id;
+
+                const content = document.getElementById('detailContent');
+                content.innerHTML = `
+                    <div class="relative h-52 -mx-5 -mt-5 mb-3 bg-slate-100">
+                        <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover" onerror="this.src='${categoryPlaceholders[item.category] || categoryPlaceholders['Otros']}'">
+                        <span class="absolute top-3 left-3 bg-brand-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-xs">
+                            ${item.category}
+                        </span>
+                        ${item.status === 'delivered' ? `
+                            <span class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center text-white font-extrabold text-sm uppercase tracking-wider">
+                                Entregado / Dado de baja
+                            </span>
+                        ` : ''}
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-start">
+                            <h2 class="text-base font-extrabold text-slate-900">${item.title}</h2>
+                            <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-md whitespace-nowrap">
+                                ${item.condition}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center gap-3 text-xs text-slate-500">
+                            <span>📍 ${item.zone}</span>
+                            <span>🕒 ${item.date}</span>
+                        </div>
+
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Descripción y Retiro</span>
+                            <p class="text-slate-700 text-xs leading-relaxed font-medium">${item.description}</p>
+                            <p class="text-slate-500 text-[11px] mt-2 border-t border-slate-200/60 pt-1"><strong>Ubicación aproximada:</strong> ${item.address}</p>
+                        </div>
+
+                        <div class="flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
+                            <span class="text-slate-400">Publicado por:</span>
+                            <span class="font-bold text-slate-800">${item.owner}</span>
+                        </div>
+
+                        ${isMyItem ? `
+                            ${item.status === 'active' ? `
+                                <button onclick="markAsDelivered(${item.id})" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs">
+                                    <i class="fa-solid fa-check-circle text-emerald-400"></i>
+                                    Marcar como Entregado / Dar de baja
+                                </button>
+                            ` : `
+                                <div class="bg-slate-100 text-slate-600 font-bold py-2.5 rounded-xl text-center text-xs">
+                                    Objeto ya entregado y dado de baja
+                                </div>
+                            `}
+                        ` : `
+                            <button onclick="startInAppChat(${item.id})" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs">
+                                <i class="fa-solid fa-comments text-base"></i>
+                                Chatear en la App para coordinar
+                            </button>
+                        `}
+                    </div>
+                `;
+                document.getElementById('detailModal').classList.remove('hidden');
+            });
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+        }
+
+        async function markAsDelivered(itemId) {
+            const item = items.find(i => i.id === itemId);
+            if (item) {
+                item.status = 'delivered';
+                try {
+                    await _supabase.from('gifts').update({ status: 'delivered' }).eq('id', itemId);
+                } catch(e){}
+                closeDetailModal();
+                closeMyPubsModal();
+                renderItems();
+                showToast("Objeto dado de baja correctamente.");
+            }
+        }
+
+        function startInAppChat(itemId) {
+            closeDetailModal();
+            if (!currentUser) {
+                openAuthModal();
+                showToast("Regístrate primero para chatear con el donante.");
+                return;
+            }
+            const item = items.find(i => i.id === itemId);
+            if (!item) return;
+
+            let existingChat = chats.find(c => c.itemId === itemId && c.buyerId === currentUser.id);
+
+            if (!existingChat) {
+                existingChat = {
+                    id: "chat_" + Date.now(),
+                    itemId: item.id,
+                    itemTitle: item.title,
+                    ownerId: item.userId,
+                    ownerName: item.owner,
+                    buyerId: currentUser.id,
+                    buyerName: currentUser.name,
+                    messages: [
+                        { sender: item.userId, text: `¡Hola! Gracias por consultar por "${item.title}". ¿Cuándo podrías retirarlo?`, time: "Ahora" }
+                    ]
+                };
+                chats.unshift(existingChat);
+            }
+
+            openChatWindow(existingChat.id);
+        }
+
+        function openChatWindow(chatId) {
+            currentActiveChatId = chatId;
+            const chat = chats.find(c => c.id === chatId);
+            if (!chat) return;
+
+            const isOwner = currentUser && chat.ownerId === currentUser.id;
+            const otherName = isOwner ? chat.buyerName : chat.ownerName;
+
+            document.getElementById('chatTitle').textContent = otherName;
+            document.getElementById('chatSub').textContent = chat.itemTitle;
+
+            renderChatMessages(chat);
+            document.getElementById('chatModal').classList.remove('hidden');
+        }
+
+        function renderChatMessages(chat) {
+            const box = document.getElementById('chatMessagesBox');
+            box.innerHTML = chat.messages.map(m => {
+                const isMe = currentUser && m.sender === currentUser.id;
+                return `
+                    <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                        <div class="${isMe ? 'bg-brand-600 text-white rounded-t-2xl rounded-l-2xl' : 'bg-white border border-slate-200 text-slate-800 rounded-t-2xl rounded-r-2xl'} px-3.5 py-2 max-w-[80%] shadow-xs">
+                            <p class="leading-relaxed">${m.text}</p>
+                        </div>
+                        <span class="text-[9px] text-slate-400 mt-0.5 px-1">${m.time}</span>
+                    </div>
+                `;
+            }).join('');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function sendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || !currentActiveChatId) return;
+
+            const chat = chats.find(c => c.id === currentActiveChatId);
+            if (chat) {
+                const now = new Date();
+                const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' : ''}${now.getMinutes()}`;
+                
+                const msgObj = {
+                    sender: currentUser ? currentUser.id : 'usr_anon',
+                    text: text,
+                    time: timeStr
+                };
+                chat.messages.push(msgObj);
+                input.value = '';
+                renderChatMessages(chat);
+
+                try {
+                    await _supabase.from('messages').insert([{
+                        gift_id: chat.itemId,
+                        text: text
+                    }]);
+                } catch(e){}
+            }
+        }
+
+        function closeChatModal() {
+            document.getElementById('chatModal').classList.add('hidden');
+            currentActiveChatId = null;
+        }
+
+        function openMyChats() {
+            if (!currentUser) {
+                openAuthModal();
+                return;
+            }
+            const userChats = chats.filter(c => c.buyerId === currentUser.id || c.ownerId === currentUser.id);
+            const container = document.getElementById('myChatsList');
+
+            if (userChats.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fa-regular fa-comments text-3xl mb-2"></i>
+                        <p class="text-xs font-semibold">No tienes conversaciones activas</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = userChats.map(c => {
+                    const isOwner = c.ownerId === currentUser.id;
+                    const otherName = isOwner ? c.buyerName : c.ownerName;
+                    const lastMsg = c.messages[c.messages.length - 1];
+
+                    return `
+                        <div onclick="closeMyChatsModal(); openChatWindow('${c.id}')" class="bg-slate-50 hover:bg-slate-100 border border-slate-200 p-3 rounded-2xl cursor-pointer transition flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-xs">${otherName}</h4>
+                                <p class="text-[11px] text-brand-600 font-medium">${c.itemTitle}</p>
+                                <p class="text-[10px] text-slate-500 truncate max-w-[220px] mt-0.5">${lastMsg ? lastMsg.text : ''}</p>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('myChatsModal').classList.remove('hidden');
+        }
+
+        function closeMyChatsModal() {
+            document.getElementById('myChatsModal').classList.add('hidden');
+        }
+
+        function openMyPublications() {
+            if (!currentUser) {
+                openAuthModal();
+                return;
+            }
+            const myItems = items.filter(i => i.userId === currentUser.id);
+            const container = document.getElementById('myPubsList');
+
+            if (myItems.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fa-solid fa-box-open text-3xl mb-2"></i>
+                        <p class="text-xs font-semibold">No has publicado ningún objeto todavía</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = myItems.map(item => `
+                    <div class="bg-slate-50 border border-slate-200 p-3 rounded-2xl flex items-center justify-between gap-3">
+                        <img src="${item.image}" class="w-12 h-12 rounded-xl object-cover shrink-0">
+                        <div class="flex-grow min-w-0">
+                            <h4 class="font-bold text-slate-900 text-xs truncate">${item.title}</h4>
+                            <span class="text-[10px] font-semibold ${item.status === 'active' ? 'text-emerald-600' : 'text-slate-400'}">
+                                ${item.status === 'active' ? '● Disponible' : '✓ Entregado'}
+                            </span>
+                        </div>
+                        ${item.status === 'active' ? `
+                            <button onclick="markAsDelivered(${item.id})" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-xl text-[10px] shrink-0">
+                                Dar de baja
+                            </button>
+                        ` : `
+                            <span class="text-[10px] font-bold text-slate-400">Finalizado</span>
+                        `}
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('myPubsModal').classList.remove('hidden');
+        }
+
+        function closeMyPubsModal() {
+            document.getElementById('myPubsModal').classList.add('hidden');
+        }
+
+        function openAuthModal() {
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            
+            const userObj = {
+                id: currentUser ? currentUser.id : "usr_" + Date.now(),
+                name: document.getElementById('userName').value,
+                email: document.getElementById('userEmail').value,
+                phone: document.getElementById('userPhone').value,
+                address: document.getElementById('userAddress').value,
+                zone: document.getElementById('userDefaultZone').value
+            };
+
+            currentUser = userObj;
+            localStorage.setItem('regalo_user', JSON.stringify(currentUser));
+
+            try {
+                await _supabase.from('profiles').upsert([{
+                    name: currentUser.name,
+                    email: currentUser.email,
+                    phone: currentUser.phone,
+                    address: currentUser.address,
+                    zone: currentUser.zone
+                }]);
+            } catch(err){}
+
+            updateUserUI();
+            closeAuthModal();
+            showToast("Perfil guardado y conectado con la nube.");
+        }
+
+        function triggerWithAdCheck(actionCallback) {
+            if (isPremium) {
+                actionCallback();
+            } else {
+                pendingAction = actionCallback;
+                openAdModal();
+            }
+        }
+
+        function openAdModal() {
+            const adModal = document.getElementById('adModal');
+            const skipBtn = document.getElementById('skipAdBtn');
+
+            adSecondsRemaining = 5;
+            skipBtn.disabled = true;
+            skipBtn.className = "w-full py-2.5 bg-slate-200 text-slate-500 font-bold rounded-xl text-xs transition cursor-not-allowed";
+            skipBtn.innerHTML = `Saltar en <span id="adTimer">5</span>s...`;
+
+            adModal.classList.remove('hidden');
+
+            if (adCountdownTimer) clearInterval(adCountdownTimer);
+            adCountdownTimer = setInterval(() => {
+                adSecondsRemaining--;
+                const timerElem = document.getElementById('adTimer');
+                if (timerElem) timerElem.textContent = adSecondsRemaining;
+
+                if (adSecondsRemaining <= 0) {
+                    clearInterval(adCountdownTimer);
+                    skipBtn.disabled = false;
+                    skipBtn.className = "w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs shadow-md transition cursor-pointer";
+                    skipBtn.innerHTML = `Saltar Anuncio <i class="fa-solid fa-forward ml-1"></i>`;
+                }
+            }, 1000);
+        }
+
+        function closeAd() {
+            if (adCountdownTimer) clearInterval(adCountdownTimer);
+            document.getElementById('adModal').classList.add('hidden');
+            if (pendingAction) {
+                pendingAction();
+                pendingAction = null;
+            }
+        }
+
+        function upgradeToPremiumFromAd() {
+            closeAd();
+            openPaywallModal();
+        }
+
+        function openPaywallModal() {
+            document.getElementById('paywallModal').classList.remove('hidden');
+        }
+
+        function closePaywallModal() {
+            document.getElementById('paywallModal').classList.add('hidden');
+        }
+
+        function simulateSubscription() {
+            isPremium = true;
+            closePaywallModal();
+            document.getElementById('inlineAdBanner').classList.add('hidden');
+
+            const badge = document.getElementById('premiumBadge');
+            const text = document.getElementById('premiumBadgeText');
+            badge.className = "bg-emerald-100 text-brand-700 border border-emerald-300 text-xs px-2.5 py-1.5 rounded-xl font-bold shadow-xs";
+            text.textContent = "PRO ACTIVO";
+
+            showToast("🎉 ¡Ahora eres Miembro Premium!");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastNotification');
+            const toastMsg = document.getElementById('toastMessage');
+
+            toastMsg.textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function switchToTab(tab) {
+            if (tab === 'feed') {
+                resetFilters();
+            }
+        }
+    </script>
+    </body>
+</html>
